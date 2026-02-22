@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Списки товаров - PWA Estimate</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-size: 0.9em; color: #666; }
+        .input-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #218838; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; background: #e9ecef; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Списки (Товары и услуги)</h2>
+    
+    <div class="input-group">
+        <input type="text" id="name" placeholder="Наименование (напр. Реклама)">
+        <input type="text" id="sku" placeholder="Артикул">
+        <select id="unit">
+            <option value="шт.">шт.</option>
+            <option value="час">час</option>
+            <option value="услуга">услуга</option>
+        </select>
+        <input type="number" id="cost" placeholder="Себестоимость">
+        <input type="number" id="price" placeholder="Цена продажи">
+        <button class="btn" onclick="addProduct()">Добавить</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Ед. изм.</th>
+                <th>Закупка</th>
+                <th>Продажа</th>
+                <th>Наценка</th>
+                <th>Рент.</th>
+            </tr>
+        </thead>
+        <tbody id="productTable">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    let products = JSON.parse(localStorage.getItem('my_products')) || [];
+
+    function addProduct() {
+        const product = {
+            name: document.getElementById('name').value,
+            sku: document.getElementById('sku').value,
+            unit: document.getElementById('unit').value,
+            cost: parseFloat(document.getElementById('cost').value) || 0,
+            price: parseFloat(document.getElementById('price').value) || 0
+        };
+
+        products.push(product);
+        saveAndRender();
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('my_products', JSON.stringify(products));
+        const tbody = document.getElementById('productTable');
+        tbody.innerHTML = '';
+
+        products.forEach(p => {
+            const profit = p.price - p.cost;
+            const margin = p.price > 0 ? ((profit / p.price) * 100).toFixed(0) : 0;
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td><b>${p.name}</b><br><small>${p.sku}</small></td>
+                    <td>${p.unit}</td>
+                    <td>${p.cost.toLocaleString()} €</td>
+                    <td>${p.price.toLocaleString()} €</td>
+                    <td><span class="badge">${profit.toLocaleString()} €</span></td>
+                    <td>${margin}%</td>
+                </tr>
+            `;
+        });
+    }
+
+    // Первичная отрисовка при загрузке
+    saveAndRender();
+</script>
+
+</body>
+</html>
