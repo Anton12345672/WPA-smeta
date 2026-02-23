@@ -1,13 +1,13 @@
 {
-  "name": "Estimates Pro App",
-  "short_name": "Estimates",
-  "start_url": "index.html",
+  "name": "Smeta Ads Pro",
+  "short_name": "SmetaAds",
+  "start_url": "/WPA-smeta/",
   "display": "standalone",
-  "background_color": "#f0f2f5",
-  "theme_color": "#28a745",
+  "background_color": "#f8f9fa",
+  "theme_color": "#1a73e8",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2636/2636428.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/300/300221.png",
       "sizes": "512x512",
       "type": "image/png"
     }
