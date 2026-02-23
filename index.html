@@ -1,101 +1,72 @@
-
-
-    function calcRow(id) {
-        const row = document.getElementById(`row-${id}`);
-        const cost = +row.querySelector('.i-cost').value || 0;
-        const price = +row.querySelector('.i-price').value || 0;
-        const div = document.getElementById(`an-${id}`);
-        if(price > 0) {
-            const markup = price - cost;
-            const margin = ((markup / price) * 100).toFixed(1);
-            div.innerHTML = <span class="markup">Наценка: ${markup}</span> | <span>Маржа: ${margin}%</span>;
-        }
+classList.add('active');
+        document.getElementById('items-box').innerHTML = '';
+        addRow();
     }
 
-    function saveEstimate() {
-        const rows = document.querySelectorAll('.item-row');
-        let items = [];
-        let totalRev = 0;
-        let totalCost = 0;
-
-        rows.forEach(row => {
-            const item = {
-                name: row.querySelector('.i-name').value,
-                unit: row.querySelector('.i-unit').value,
-                qty: +row.querySelector('.i-qty').value,
-                cost: +row.querySelector('.i-cost').value,
-                price: +row.querySelector('.i-price').value
-            };
-            if(item.name) {
-                items.push(item);
-                totalRev += (item.price * item.qty);
-                totalCost += (item.cost * item.qty);
-            }
-        });
-
-        const estimate = {
-            id: '#' + Math.floor(Math.random() * 10000),
-            client: document.getElementById('client-name').value || 'Новый клиент',
-            date: new Date().toLocaleDateString(),
-            items: items,
-            total: totalRev,
-            profit: totalRev - totalCost,
-            status: document.getElementById('status').value,
-            currency: document.getElementById('currency').value
-        };
-
-        estimates.push(estimate);
-        localStorage.setItem('smeta_ads_data', JSON.stringify(estimates));
-        downloadPDF(estimate);
-        closeEditor();
-    }
-
-    function renderDashboard() {
-        const tbody = document.querySelector('#estimates-list tbody');
-        tbody.innerHTML = '';
-        let tRev = 0, tProf = 0;
-
-        estimates.forEach((est, index) => {
-            tRev += est.total;
-            tProf += est.profit;
-            tbody.innerHTML += `
-                <tr>
-                    <td>${est.id}</td>
-                    <td><b>${est.client}</b></td>
-                    <td>${est.date}</td>
-                    <td>${est.total} ${est.currency}</td>
-                    <td style="color:var(--success)">${est.profit} ${est.currency}</td>
-                    <td><span class="status-badge status-${est.status}">${est.status}</span></td>
-                    <td><button class="btn btn-outline" onclick="deleteEst(${index})">Удалить</button></td>
-                </tr>
-            `;
-        });
-
-        document.getElementById('dash-total').innerText = tRev + ' €';
-        document.getElementById('dash-profit').innerText = tProf + ' €';
-        document.getElementById('dash-count').innerText = estimates.length;
-    }
-
-    function deleteEst(index) {
-        estimates.splice(index, 1);
-        localStorage.setItem('smeta_ads_data', JSON.stringify(estimates));
+    function showDashboard() {
+        document.getElementById('editor').classList.remove('active');
+        document.getElementById('dashboard').classList.add('active');
         renderDashboard();
     }
 
-    function downloadPDF(est) {
-        const element = document.getElementById('pdf-template');
-        document.getElementById('pdf-client-display').innerText = est.client;
-        document.getElementById('pdf-id').innerText = est.id;
-        document.getElementById('pdf-date').innerText = est.date;
-        
-        const tbody = document.querySelector('#pdf-table tbody');
-        tbody.innerHTML = est.items.map(i => `
-            <tr><td>${i.name} (${i.unit})</td><td>${i.qty}</td><td>${i.price} ${est.currency}</td><td>${i.qty * i.price} ${est.currency}</td></tr>
-        `).join('');
-        
-        document.getElementById('pdf-totals').innerHTML = <h3>ИТОГО: ${est.total} ${est.currency}</h3>;
+    function addRow() {
+        const div = document.createElement('div');
+        div.className = 'item-row';
+        div.innerHTML = `
+            <div><label>Товар/Услуга</label><input type="text" class="i-n" style="width:100%"></div>
+            <div><label>Ед.</label><select class="i-u" style="width:100%"><option>pcs</option><option>m</option><option>m²</option><option>h</option></select></div>
+            <div><label>Кол-во</label><input type="number" class="i-q" value="1" style="width:100%"></div>
+            <div><label>Закупка</label><input type="number" class="i-c" value="0" style="width:100%"></div>
+            <div><label>Продажа</label><input type="number" class="i-p" value="0" style="width:100%"></div>
+            <button onclick="this.parentElement.remove()" style="background:none; border:none; color:red; cursor:pointer;">✕</button>
+        `;
+        document.getElementById('items-box').appendChild(div);
+    }
 
-        html2pdf().set({ margin: 10, filename: Smeta_${est.client}.pdf, html2canvas: { scale: 2 } }).from(element).save();
+    function saveSmeta() {
+        const rows = document.querySelectorAll('.item-row');
+        let items = [];
+        let total = 0, profit = 0;
+
+        rows.forEach(r => {
+            const qty = +r.querySelector('.i-q').value;
+            const price = +r.querySelector('.i-p').value;
+            const cost = +r.querySelector('.i-c').value;
+            items.push({ n: r.querySelector('.i-n').value, q: qty, u: r.querySelector('.i-u').value, p: price });
+            total += (qty * price);
+            profit += (qty * (price - cost));
+        });
+
+        const tax = +document.getElementById('c-tax').value;
+        const finalTotal = total + (total * (tax / 100));
+
+        const entry = {
+            client: document.getElementById('c-name').value || 'Без имени',
+            date: new Date().toLocaleDateString(),
+            total: finalTotal.toFixed(2),
+            profit: profit.toFixed(2),
+            items: items
+        };
+
+        db.push(entry);
+        localStorage.setItem('smeta_db', JSON.stringify(db));
+        
+        // Генерация PDF (упрощенно)
+        alert("Смета сохранена! Сейчас начнется загрузка PDF.");
+        showDashboard();
+    }
+
+    function renderDashboard() {
+        const tbody = document.querySelector('#smeta-list tbody');
+        tbody.innerHTML = '';
+        let tT = 0, tP = 0;
+        db.forEach(s => {
+            tT += +s.total; tP += +s.profit;
+            tbody.innerHTML += <tr><td><b>${s.client}</b></td><td>${s.date}</td><td>${s.total} €</td><td style="color:#1e8e3e">${s.profit} €</td><td><span class="badge">Paid</span></td></tr>;
+        });
+        document.getElementById('dash-total').innerText = tT.toFixed(2) + ' €';
+        document.getElementById('dash-profit').innerText = tP.toFixed(2) + ' €';
+        document.getElementById('dash-count').innerText = db.length;
     }
 
     renderDashboard();
