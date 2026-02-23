@@ -1,11 +1,11 @@
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open('v1').then((cache) => cache.addAll(['index.html', 'manifest.json']))
-  );
-});
+const CACHE_NAME = 'smeta-ads-v1';
+const urlsToCache = [
+  'index.html',
+  'manifest.json'
+];
 
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => response || fetch(e.request))
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
 });
