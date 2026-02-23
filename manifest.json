@@ -1,9 +1,9 @@
 {
   "name": "Smeta Ads Pro",
   "short_name": "SmetaAds",
-  "start_url": "/WPA-smeta/",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f8f9fa",
+  "background_color": "#ffffff",
   "theme_color": "#1a73e8",
   "icons": [
     {
