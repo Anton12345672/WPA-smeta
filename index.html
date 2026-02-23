@@ -1,98 +1,104 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Списки товаров - PWA Estimate</title>
-    <style>
-        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { color: #333; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
-        th { background: #f8f9fa; font-size: 0.9em; color: #666; }
-        .input-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
-        .btn:hover { background: #218838; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; background: #e9ecef; }
-    </style>
-</head>
-<body>
 
-<div class="card">
-    <h2>Списки (Товары и услуги)</h2>
-    
-    <div class="input-group">
-        <input type="text" id="name" placeholder="Наименование (напр. Реклама)">
-        <input type="text" id="sku" placeholder="Артикул">
-        <select id="unit">
-            <option value="шт.">шт.</option>
-            <option value="час">час</option>
-            <option value="услуга">услуга</option>
-        </select>
-        <input type="number" id="cost" placeholder="Себестоимость">
-        <input type="number" id="price" placeholder="Цена продажи">
-        <button class="btn" onclick="addProduct()">Добавить</button>
-    </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Наименование</th>
-                <th>Ед. изм.</th>
-                <th>Закупка</th>
-                <th>Продажа</th>
-                <th>Наценка</th>
-                <th>Рент.</th>
-            </tr>
-        </thead>
-        <tbody id="productTable">
-            </tbody>
-    </table>
-</div>
-
-<script>
-    let products = JSON.parse(localStorage.getItem('my_products')) || [];
-
-    function addProduct() {
-        const product = {
-            name: document.getElementById('name').value,
-            sku: document.getElementById('sku').value,
-            unit: document.getElementById('unit').value,
-            cost: parseFloat(document.getElementById('cost').value) || 0,
-            price: parseFloat(document.getElementById('price').value) || 0
-        };
-
-        products.push(product);
-        saveAndRender();
+    function calcRow(id) {
+        const row = document.getElementById(`row-${id}`);
+        const cost = +row.querySelector('.i-cost').value || 0;
+        const price = +row.querySelector('.i-price').value || 0;
+        const div = document.getElementById(`an-${id}`);
+        if(price > 0) {
+            const markup = price - cost;
+            const margin = ((markup / price) * 100).toFixed(1);
+            div.innerHTML = <span class="markup">Наценка: ${markup}</span> | <span>Маржа: ${margin}%</span>;
+        }
     }
 
-    function saveAndRender() {
-        localStorage.setItem('my_products', JSON.stringify(products));
-        const tbody = document.getElementById('productTable');
-        tbody.innerHTML = '';
+    function saveEstimate() {
+        const rows = document.querySelectorAll('.item-row');
+        let items = [];
+        let totalRev = 0;
+        let totalCost = 0;
 
-        products.forEach(p => {
-            const profit = p.price - p.cost;
-            const margin = p.price > 0 ? ((profit / p.price) * 100).toFixed(0) : 0;
-            
+        rows.forEach(row => {
+            const item = {
+                name: row.querySelector('.i-name').value,
+                unit: row.querySelector('.i-unit').value,
+                qty: +row.querySelector('.i-qty').value,
+                cost: +row.querySelector('.i-cost').value,
+                price: +row.querySelector('.i-price').value
+            };
+            if(item.name) {
+                items.push(item);
+                totalRev += (item.price * item.qty);
+                totalCost += (item.cost * item.qty);
+            }
+        });
+
+        const estimate = {
+            id: '#' + Math.floor(Math.random() * 10000),
+            client: document.getElementById('client-name').value || 'Новый клиент',
+            date: new Date().toLocaleDateString(),
+            items: items,
+            total: totalRev,
+            profit: totalRev - totalCost,
+            status: document.getElementById('status').value,
+            currency: document.getElementById('currency').value
+        };
+
+        estimates.push(estimate);
+        localStorage.setItem('smeta_ads_data', JSON.stringify(estimates));
+        downloadPDF(estimate);
+        closeEditor();
+    }
+
+    function renderDashboard() {
+        const tbody = document.querySelector('#estimates-list tbody');
+        tbody.innerHTML = '';
+        let tRev = 0, tProf = 0;
+
+        estimates.forEach((est, index) => {
+            tRev += est.total;
+            tProf += est.profit;
             tbody.innerHTML += `
                 <tr>
-                    <td><b>${p.name}</b><br><small>${p.sku}</small></td>
-                    <td>${p.unit}</td>
-                    <td>${p.cost.toLocaleString()} €</td>
-                    <td>${p.price.toLocaleString()} €</td>
-                    <td><span class="badge">${profit.toLocaleString()} €</span></td>
-                    <td>${margin}%</td>
+                    <td>${est.id}</td>
+                    <td><b>${est.client}</b></td>
+                    <td>${est.date}</td>
+                    <td>${est.total} ${est.currency}</td>
+                    <td style="color:var(--success)">${est.profit} ${est.currency}</td>
+                    <td><span class="status-badge status-${est.status}">${est.status}</span></td>
+                    <td><button class="btn btn-outline" onclick="deleteEst(${index})">Удалить</button></td>
                 </tr>
             `;
         });
+
+        document.getElementById('dash-total').innerText = tRev + ' €';
+        document.getElementById('dash-profit').innerText = tProf + ' €';
+        document.getElementById('dash-count').innerText = estimates.length;
     }
 
-    // Первичная отрисовка при загрузке
-    saveAndRender();
-</script>
+    function deleteEst(index) {
+        estimates.splice(index, 1);
+        localStorage.setItem('smeta_ads_data', JSON.stringify(estimates));
+        renderDashboard();
+    }
 
+    function downloadPDF(est) {
+        const element = document.getElementById('pdf-template');
+        document.getElementById('pdf-client-display').innerText = est.client;
+        document.getElementById('pdf-id').innerText = est.id;
+        document.getElementById('pdf-date').innerText = est.date;
+        
+        const tbody = document.querySelector('#pdf-table tbody');
+        tbody.innerHTML = est.items.map(i => `
+            <tr><td>${i.name} (${i.unit})</td><td>${i.qty}</td><td>${i.price} ${est.currency}</td><td>${i.qty * i.price} ${est.currency}</td></tr>
+        `).join('');
+        
+        document.getElementById('pdf-totals').innerHTML = <h3>ИТОГО: ${est.total} ${est.currency}</h3>;
+
+        html2pdf().set({ margin: 10, filename: Smeta_${est.client}.pdf, html2canvas: { scale: 2 } }).from(element).save();
+    }
+
+    renderDashboard();
+</script>
 </body>
 </html>
