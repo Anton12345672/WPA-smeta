@@ -1,75 +1,36 @@
-classList.add('active');
-        document.getElementById('items-box').innerHTML = '';
-        addRow();
-    }
-
-    function showDashboard() {
-        document.getElementById('editor').classList.remove('active');
-        document.getElementById('dashboard').classList.add('active');
-        renderDashboard();
-    }
-
-    function addRow() {
-        const div = document.createElement('div');
-        div.className = 'item-row';
-        div.innerHTML = `
-            <div><label>Товар/Услуга</label><input type="text" class="i-n" style="width:100%"></div>
-            <div><label>Ед.</label><select class="i-u" style="width:100%"><option>pcs</option><option>m</option><option>m²</option><option>h</option></select></div>
-            <div><label>Кол-во</label><input type="number" class="i-q" value="1" style="width:100%"></div>
-            <div><label>Закупка</label><input type="number" class="i-c" value="0" style="width:100%"></div>
-            <div><label>Продажа</label><input type="number" class="i-p" value="0" style="width:100%"></div>
+</label><select class="in-u"><option>pcs</option><option>m²</option><option>m</option><option>h</option></select></div>
+            <div><label>Кол-во</label><input type="number" class="in-q" value="1"></div>
+            <div><label>Закупка</label><input type="number" class="in-c" value="0"></div>
+            <div><label>Продажа</label><input type="number" class="in-p" value="0"></div>
+            <div class="calc-res" style="font-size:10px; color:green">...</div>
             <button onclick="this.parentElement.remove()" style="background:none; border:none; color:red; cursor:pointer;">✕</button>
         `;
-        document.getElementById('items-box').appendChild(div);
+        document.getElementById('items-list').appendChild(div);
     }
 
-    function saveSmeta() {
+    function saveData() {
         const rows = document.querySelectorAll('.item-row');
-        let items = [];
-        let total = 0, profit = 0;
-
+        let tR = 0, tP = 0;
         rows.forEach(r => {
-            const qty = +r.querySelector('.i-q').value;
-            const price = +r.querySelector('.i-p').value;
-            const cost = +r.querySelector('.i-c').value;
-            items.push({ n: r.querySelector('.i-n').value, q: qty, u: r.querySelector('.i-u').value, p: price });
-            total += (qty * price);
-            profit += (qty * (price - cost));
+            const q = +r.querySelector('.in-q').value, p = +r.querySelector('.in-p').value, c = +r.querySelector('.in-c').value;
+            tR += (q * p); tP += (q * (p - c));
         });
-
-        const tax = +document.getElementById('c-tax').value;
-        const finalTotal = total + (total * (tax / 100));
-
-        const entry = {
-            client: document.getElementById('c-name').value || 'Без имени',
-            date: new Date().toLocaleDateString(),
-            total: finalTotal.toFixed(2),
-            profit: profit.toFixed(2),
-            items: items
-        };
-
-        db.push(entry);
-        localStorage.setItem('smeta_db', JSON.stringify(db));
-        
-        // Генерация PDF (упрощенно)
-        alert("Смета сохранена! Сейчас начнется загрузка PDF.");
-        showDashboard();
+        db.push({ client: document.getElementById('c-name').value || 'New', date: new Date().toLocaleDateString(), total: tR, profit: tP });
+        localStorage.setItem('estimates_v3', JSON.stringify(db));
+        location.reload();
     }
 
-    function renderDashboard() {
-        const tbody = document.querySelector('#smeta-list tbody');
-        tbody.innerHTML = '';
-        let tT = 0, tP = 0;
+    function render() {
+        let sR = 0, sP = 0;
         db.forEach(s => {
-            tT += +s.total; tP += +s.profit;
-            tbody.innerHTML += <tr><td><b>${s.client}</b></td><td>${s.date}</td><td>${s.total} €</td><td style="color:#1e8e3e">${s.profit} €</td><td><span class="badge">Paid</span></td></tr>;
+            sR += s.total; sP += s.profit;
+            document.getElementById('main-table').innerHTML += <tr><td><b>${s.client}</b></td><td>${s.date}</td><td>${s.total} €</td><td style="color:green">${s.profit} €</td></tr>;
         });
-        document.getElementById('dash-total').innerText = tT.toFixed(2) + ' €';
-        document.getElementById('dash-profit').innerText = tP.toFixed(2) + ' €';
-        document.getElementById('dash-count').innerText = db.length;
+        document.getElementById('total-rev').innerText = sR + ' €';
+        document.getElementById('total-prof').innerText = sP + ' €';
+        document.getElementById('total-count').innerText = db.length;
     }
-
-    renderDashboard();
+    render();
 </script>
 </body>
 </html>
